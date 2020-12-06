@@ -17,22 +17,22 @@ for i = 1:width
 end
 x = linspace(region.BoundingBox(1,1), region.BoundingBox(2,1), width);
 y = linspace(region.BoundingBox(1,2), region.BoundingBox(2,2), height);
-figure()
-imagesc(x, y, grid);
-set(gca,'YDir','normal'); % imagesc flips y axis by default, this line reverts that
-caxis([-1, 3]);
-colormap(jet);
-colorbar
+%figure()
+%imagesc(x, y, grid);
+%set(gca,'YDir','normal'); % imagesc flips y axis by default, this line reverts that
+%caxis([-1, 3]);
+%colormap(jet);
+%colorbar
 
 %% Simulation Parameters
 % Time
 t = datetime(2020, 9, 15, 12, 0, 0);
-tf = datetime(2020, 9, 15, 12, 30, 0);
+tf = datetime(2020, 9, 16, 12, 0, 0);
 
 % Reactive policy
 n_robots = 3;           % Number of robots
 robot_velocity = 90;    % Average robot velocity (km/h)
-omega_0 = -1;
+omega_0 = -0.1;
 omega_1 = 0.1;
 pos = [1, 30; 1, 31; 1, 32];
 heading = zeros(n_robots, 1);
@@ -43,157 +43,157 @@ V_2 = zeros(size(grid, 1), size(grid, 2));
 U_3 = zeros(size(grid, 1), size(grid, 2));
 V_3 = zeros(size(grid, 1), size(grid, 2));
 
-%% Load nc
+while t < tf
+    % Load nc
+    filename='maceio.nc';
 
-filename='maceio.nc';
+    if isfile(filename) == 0
+        disp(['No ', filename, ', creating one...']);
+        python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
+        %python_cmd = '/home/glauberrleite/miniconda3/envs/gnome/bin/python'; % Linux
+        python_file = 'step.py';
+        [t_year, t_month, t_day, t_hour, t_minute, ~] = datevec(t);
+        command = strjoin({python_cmd, python_file, num2str(t_year), num2str(t_month), num2str(t_day), num2str(t_hour), num2str(t_minute)}, ' ');
+        system(command)
+        disp(['Created ', filename])
+    end
 
-if isfile(filename) == 0
-    disp(['No ', filename, ', creating one...']);
+    %disp(['Loading ', filename])
+    time=ncread(filename,'time');
+    lon=double(ncread(filename,'longitude'));
+    lat=double(ncread(filename,'latitude'));
+
+    pc=ncread(filename,'particle_count'); %'1-number of particles in a given timestep'
+    status = ncread(filename,'status_codes');
+    %'0: not_released, 2: in_water, 3: on_land, 7: off_maps, 10: evaporated, 12: to_be_removed, 32: on_tideflat,'
+
+    np=pc(end);
+    l = length(lon);
+    lon = lon(l-np+1:l);
+    lat = lat(l-np+1:l);
+    status =status(l-np+1:l);
+
+    % Find particles "in water - status=2"
+    I=find(status==2);
+    lonI=lon(I,:);
+    latI=lat(I,:);
+
+    % Define limits
+    xmin=-36.6;
+    xmax=-34.5;
+    ymin=-10.8;
+    ymax=-8.7;
+
+    fntsz = 16;
+
+    I=find(lonI<=xmax);
+    lonI=lonI(I,:);
+    latI=latI(I,:);
+    I=find(lonI>=xmin);
+    lonI=lonI(I,:);
+    latI=latI(I,:);
+    I=find(latI>=ymin);
+    lonI=lonI(I,:);
+    latI=latI(I,:);
+    I=find(latI<=ymax);
+    lonI=lonI(I,:);
+    latI=latI(I,:);
+
+    % Running KDE for concentration
+    data = [lonI latI];
+    [bw, de, xk, yk] = kde2d(data);
+
+    % Prepare grid
+    for j = 1:size(grid, 1)
+        for i = 1:size(grid, 2)
+            if (grid(j, i) > -1)
+                current_lon = (i/res_grid) + region.BoundingBox(1,1);
+                current_lat = (j/res_grid) + region.BoundingBox(1,2);
+
+                grid(j, i) = interpolate(current_lon, current_lat, de, xk(1, :), yk(:, 1));
+            end
+        end
+    end
+    %imagesc(x, y, grid);
+    %set(gca,'YDir','normal');
+    %colormap(jet);
+    %colorbar
+
+    % step policy
+    grid = 10^8 * grid; % Scaling
+
+    for robot = 1:n_robots
+        target = computeTargetMulti(pos(robot, :), heading(robot), omega_0, omega_1, grid, pos(setdiff(1:end, robot), :));
+        move = 0;
+        if norm(target - pos(robot, :)) > 0
+            move = round((target - pos(robot, :)) ./ norm(target - pos(robot, :)));
+            % Move robot, taking care of out of border
+            if grid(pos(robot, 2) + move(2), pos(robot, 1) + move(1)) <= 0
+                disp(['Robot ', num2str(robot), ' was going to an out-of-border cell']);
+                continue; % Keep this robot stopped, go to next
+            end
+
+            pos(robot, :) = pos(robot, :) + move;
+            heading(robot) = atan2(move(2), move(1));
+
+            if (robot == 1)
+                U_1(pos(robot, 2), pos(robot, 1)) = move(1);
+                V_1(pos(robot, 2), pos(robot, 1)) = move(2);
+            elseif (robot == 2)
+                U_2(pos(robot, 2), pos(robot, 1)) = move(1);
+                V_2(pos(robot, 2), pos(robot, 1)) = move(2);
+            else
+                U_3(pos(robot, 2), pos(robot, 1)) = move(1);
+                V_3(pos(robot, 2), pos(robot, 1)) = move(2);
+            end
+        else 
+            disp(['Robot ', num2str(robot), ' stopped']);
+        end
+    end
+
+    % Comsume particles where there are robots
+    for robot = 1:n_robots
+        grid(pos(robot, 2), pos(robot, 1)) = 0;
+
+        % Need to consume lat, lon particles
+
+    end
+
+    % Plotting
+    imagesc(x, y, grid);
+    set(gca,'YDir','normal');
+    [X, Y] = meshgrid(x, y);
+    hold on
+    quiver(X, Y, U_1, V_1, 'r')
+    quiver(X, Y, U_2, V_2, 'y')
+    quiver(X, Y, U_3, V_3, 'k')
+    hold off
+    %caxis([-1, 10]);
+    colormap(jet);
+    colorbar
+    pause
+
+    % Write txt
+    output_filename = 'step.txt';
+
+    if isfile(output_filename)
+        delete(output_filename);
+    end
+
+    output_file = fopen(output_filename, 'w');
+    fprintf(output_file, '%.10f\t%.10f\t1\n', [lon'; lat']);
+    fclose(output_file);
+
+    % Call step.py using new time ref
     python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
     %python_cmd = '/home/glauberrleite/miniconda3/envs/gnome/bin/python'; % Linux
     python_file = 'step.py';
+    %t = t + minutes(5); % 5 minutes step
+    t = t + hours(1);
     [t_year, t_month, t_day, t_hour, t_minute, ~] = datevec(t);
     command = strjoin({python_cmd, python_file, num2str(t_year), num2str(t_month), num2str(t_day), num2str(t_hour), num2str(t_minute)}, ' ');
     system(command)
-    disp(['Created ', filename])
 end
-
-disp(['Loading ', filename])
-time=ncread(filename,'time');
-lon=double(ncread(filename,'longitude'));
-lat=double(ncread(filename,'latitude'));
-
-pc=ncread(filename,'particle_count'); %'1-number of particles in a given timestep'
-status = ncread(filename,'status_codes');
-%'0: not_released, 2: in_water, 3: on_land, 7: off_maps, 10: evaporated, 12: to_be_removed, 32: on_tideflat,'
-
-np=pc(end);
-l = length(lon);
-lon = lon(l-np+1:l);
-lat = lat(l-np+1:l);
-status =status(l-np+1:l);
-
-% Find particles "in water - status=2"
-I=find(status==2);
-lonI=lon(I,:);
-latI=lat(I,:);
-
-% Define limits
-xmin=-36.6;
-xmax=-34.5;
-ymin=-10.8;
-ymax=-8.7;
-
-fntsz = 16;
-
-I=find(lonI<=xmax);
-lonI=lonI(I,:);
-latI=latI(I,:);
-I=find(lonI>=xmin);
-lonI=lonI(I,:);
-latI=latI(I,:);
-I=find(latI>=ymin);
-lonI=lonI(I,:);
-latI=latI(I,:);
-I=find(latI<=ymax);
-lonI=lonI(I,:);
-latI=latI(I,:);
-
-% Running KDE for concentration
-data = [lonI latI];
-[bw, de, xk, yk] = kde2d(data);
-
-%% Prepare grid
-for j = 1:size(grid, 1)
-    for i = 1:size(grid, 2)
-        if (grid(j, i) > -1)
-            current_lon = (i/res_grid) + region.BoundingBox(1,1);
-            current_lat = (j/res_grid) + region.BoundingBox(1,2);
-            
-            grid(j, i) = interpolate(current_lon, current_lat, de, xk(1, :), yk(:, 1));
-        end
-    end
-end
-imagesc(x, y, grid);
-set(gca,'YDir','normal');
-colormap(jet);
-colorbar
-
-%% step policy
-grid = 10^8 * grid; % Scaling
-
-for robot = 1:n_robots
-    target = computeTargetMulti(pos(robot, :), heading(robot), omega_0, omega_1, grid, pos(setdiff(1:end, robot), :));
-    move = 0;
-    if norm(target - pos(robot, :)) > 0
-        move = round((target - pos(robot, :)) ./ norm(target - pos(robot, :)));
-        % Move robot, taking care of out of border
-        if grid(pos(robot, 2) + move(2), pos(robot, 1) + move(1)) <= 0
-            disp(['Robot ', num2str(robot), ' was going to an out-of-border cell']);
-            continue; % Keep this robot stopped, go to next
-        end
-        
-        pos(robot, :) = pos(robot, :) + move;
-        heading(robot) = atan2(move(2), move(1));
-        
-        if (robot == 1)
-            U_1(pos(robot, 2), pos(robot, 1)) = move(1);
-            V_1(pos(robot, 2), pos(robot, 1)) = move(2);
-        elseif (robot == 2)
-            U_2(pos(robot, 2), pos(robot, 1)) = move(1);
-            V_2(pos(robot, 2), pos(robot, 1)) = move(2);
-        else
-            U_3(pos(robot, 2), pos(robot, 1)) = move(1);
-            V_3(pos(robot, 2), pos(robot, 1)) = move(2);
-        end
-    else 
-        disp(['Robot ', num2str(robot), ' stopped']);
-    end
-end
-
-%% Comsume particles where there are robots
-for robot = 1:n_robots
-    grid(pos(robot, 2), pos(robot, 1)) = 0;
-    
-    % Need to consume lat, lon particles
-    
-end
-
-%% Plotting
-imagesc(x, y, grid);
-set(gca,'YDir','normal');
-[X, Y] = meshgrid(x, y);
-hold on
-quiver(X, Y, U_1, V_1, 'r')
-quiver(X, Y, U_2, V_2, 'y')
-quiver(X, Y, U_3, V_3, 'k')
-hold off
-
-%caxis([-1, 10]);
-colormap(jet);
-colorbar
-pause
-
-%% Write txt
-output_filename = 'step.txt';
-
-if isfile(output_filename)
-    delete(output_filename);
-end
-
-output_file = fopen(output_filename, 'w');
-fprintf(output_file, '%.10f\t%.10f\t1\n', [lat'; lon']);
-fclose(output_file);
-
-%% Call step.py using new time ref
-python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
-%python_cmd = '/home/glauberrleite/miniconda3/envs/gnome/bin/python'; % Linux
-python_file = 'step.py';
-t = t + minutes(5); % 5 minutes step
-[t_year, t_month, t_day, t_hour, t_minute, ~] = datevec(t);
-command = strjoin({python_cmd, python_file, num2str(t_year), num2str(t_month), num2str(t_day), num2str(t_hour), num2str(t_minute)}, ' ');
-system(command)
-
 %% Functions
 function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh)
     max_value = 0;
