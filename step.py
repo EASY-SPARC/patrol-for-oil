@@ -121,9 +121,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     model.spills += Spill(release=release, substance=subs)
 
     # Particles from previows simulation step
-    release2 = release_from_splot_data(start_time,
-                                      'step.txt')
-    model.spills += Spill(release=release2, substance=subs)
+    try:
+        f = open('step.txt')
+        f.close()
+        release2 = release_from_splot_data(start_time,
+                                        'step.txt')
+        model.spills += Spill(release=release2, substance=subs)        
+    except IOError:
+        print('No previous step, using only contiguous.txt')
 
     #assert rel.num_elements == exp_num_elems
     #assert len(rel.start_position) == exp_num_elems
@@ -135,13 +140,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
 
     #spnc = Spill(release=None)
     #spnc.release = relnc
-
-    print 'adding outputters'
-    model.outputters += Renderer(mapfile, images_dir, image_size=(800, 600))
-    
-    #scripting.remove_netcdf(netcdf_file)
-
-    #model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print 'adding a RandomMover:'
     #model.movers += RandomMover(diffusion_coef=10000, uncertain_factor=2)
@@ -172,7 +170,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     #set the viewport to zoom in on the map:
     #renderer.viewport = ((-37, -11), (-34, -8)) #alagoas
     renderer.viewport = ((-35.5, -9.5), (-34, -8.5)) #1/4 N alagoas
-    #model.outputters += renderer
+    model.outputters += renderer
     
     netcdf_file = os.path.join(base_dir, 'maceio.nc')
     scripting.remove_netcdf(netcdf_file)
