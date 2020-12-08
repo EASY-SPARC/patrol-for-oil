@@ -65,8 +65,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     # global renderer
     #duration = timedelta(minutes=5)
     #timestep = timedelta(minutes=5)
-    duration = timedelta(hours=1)
-    timestep = timedelta(minutes=60)
+    duration = timedelta(minutes=15)
+    timestep = timedelta(minutes=15)
     endtime = start_time + duration
 
     steps = duration.total_seconds()/timestep.total_seconds()
@@ -174,7 +174,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     renderer.viewport = ((-35.5, -9.5), (-34, -8.5)) #1/4 N alagoas
     model.outputters += renderer
     
-    netcdf_file = os.path.join(base_dir, 'maceio.nc')
+    netcdf_file = os.path.join(base_dir, 'step.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='standard', surface_conc='kde')
 

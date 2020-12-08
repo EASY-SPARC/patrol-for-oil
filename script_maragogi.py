@@ -74,7 +74,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     duration = timedelta(days=1)
-    timestep = timedelta(minutes=60)
+    timestep = timedelta(minutes=15)
     endtime = start_time + duration
 
 
