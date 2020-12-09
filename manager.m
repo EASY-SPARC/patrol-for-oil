@@ -47,18 +47,20 @@ if (prev_simul)
         ymin = region.BoundingBox(1,2);
         ymax = region.BoundingBox(2,2);
 
-        I=find(lon<=xmax);
-        lonI=lon(I,:);
-        latI=lat(I,:);
-        I=find(lonI>=xmin);
-        lonI=lonI(I,:);
-        latI=latI(I,:);
-        I=find(latI>=ymin);
-        lonI=lonI(I,:);
-        latI=latI(I,:);
-        I=find(latI<=ymax);
-        lonI=lonI(I,:);
-        latI=latI(I,:);
+        I1=find(lon<=xmax);
+        lonI=lon(I1,:);
+        latI=lat(I1,:);
+        I2=find(lonI>=xmin);
+        lonI=lonI(I2,:);
+        latI=latI(I2,:);
+        I3=find(latI>=ymin);
+        lonI=lonI(I3,:);
+        latI=latI(I3,:);
+        I4=find(latI<=ymax);
+        lonI=lonI(I4,:);
+        latI=latI(I4,:);
+    
+        I = I1(I2(I3(I4)));
 
         % Histogram data
         % figure  
@@ -129,7 +131,7 @@ end
 n_robots = 3;
 heading = zeros(n_robots, 1);
 robots = [1, 15; 1, 16; 1, 17];
-cnt = 15;
+cnt = 100;
 
 while (t < tf)
     for it = 1:cnt
@@ -141,8 +143,8 @@ while (t < tf)
             
             % binX and binY address the indexes from histcounts2, and I has
             % the indexes on whole coastal range lat lon.
-            lon(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = [];
-            lat(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = [];
+            lon(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = NaN;
+            lat(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = NaN;
         end
         
         t = t + minutes(1);
@@ -160,6 +162,10 @@ while (t < tf)
         pause
         
     end
+    % Removing NaN particles
+    lon = lon(~isnan(lon));
+    lat = lat(~isnan(lat));
+    
     [lon, lat] = gnome_sim(t, lon, lat);
     % Define limits
     xmin = region.BoundingBox(1,1);
