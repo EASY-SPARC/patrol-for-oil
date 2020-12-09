@@ -2,7 +2,7 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
-    omega_0 = -0.1;                % Repulsion to distant cells
+    omega_0 = -0.5;                 % Repulsion to distant cells
     omega_1 = 0.1;                  % Repulsion to cells with nearby robots
 
     for robot = 1:n_robots
