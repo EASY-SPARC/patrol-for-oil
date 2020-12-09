@@ -24,6 +24,8 @@ end
 x = linspace(region.BoundingBox(1,1), region.BoundingBox(2,1), width);
 y = linspace(region.BoundingBox(1,2), region.BoundingBox(2,2), height);
 
+grid_initial = grid;
+
 prev_simul = false;
 
 lon = 0;
@@ -96,20 +98,22 @@ else
     ymin = region.BoundingBox(1,2);
     ymax = region.BoundingBox(2,2);
 
-    I=find(lon<=xmax);
-    lonI=lon(I,:);
-    latI=lat(I,:);
-    I=find(lonI>=xmin);
-    lonI=lonI(I,:);
-    latI=latI(I,:);
-    I=find(latI>=ymin);
-    lonI=lonI(I,:);
-    latI=latI(I,:);
-    I=find(latI<=ymax);
-    lonI=lonI(I,:);
-    latI=latI(I,:);
+    I1=find(lon<=xmax);
+    lonI=lon(I1,:);
+    latI=lat(I1,:);
+    I2=find(lonI>=xmin);
+    lonI=lonI(I2,:);
+    latI=latI(I2,:);
+    I3=find(latI>=ymin);
+    lonI=lonI(I3,:);
+    latI=latI(I3,:);
+    I4=find(latI<=ymax);
+    lonI=lonI(I4,:);
+    latI=latI(I4,:);
     
-    [h, ~, ~] = histcounts2(lonI,latI,size(grid));
+    I = I1(I2(I3(I4)));
+    
+    [h, ~, ~, binX, binY] = histcounts2(lonI,latI,size(grid));
 
     % Prepare grid with histogram values and boundaries
     for j = 1:size(grid, 1)
@@ -125,7 +129,68 @@ end
 n_robots = 3;
 heading = zeros(n_robots, 1);
 robots = [1, 15; 1, 16; 1, 17];
+cnt = 15;
 
-[robots, heading] = reactive_patrol(grid, robots, heading, mask);
+while (t < tf)
+    for it = 1:cnt
+        [robots, heading] = reactive_patrol(grid, robots, heading, mask);
+               
+        % Consume particles
+        for robot = 1:n_robots
+            grid(robots(robot, 2), robots(robot, 1)) = 0;
+            
+            % binX and binY address the indexes from histcounts2, and I has
+            % the indexes on whole coastal range lat lon.
+            lon(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = [];
+            lat(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = [];
+        end
+        
+        t = t + minutes(1);
+        
+        c = ['green'; 'white'; 'black'];
+        imagesc(grid);
+        set(gca, 'YDir', 'normal');
+        hold on
+        for robot = 1:n_robots
+            scatter(robots(robot, 1), robots(robot, 2), [], c(robot, :), 'filled');
+        end
+        hold off
+        caxis([-1, 5])
+        colorbar
+        pause
+        
+    end
+    [lon, lat] = gnome_sim(t, lon, lat);
+    % Define limits
+    xmin = region.BoundingBox(1,1);
+    xmax = region.BoundingBox(2,1);
+    ymin = region.BoundingBox(1,2);
+    ymax = region.BoundingBox(2,2);
 
-disp('OK');
+    I1=find(lon<=xmax);
+    lonI=lon(I1,:);
+    latI=lat(I1,:);
+    I2=find(lonI>=xmin);
+    lonI=lonI(I2,:);
+    latI=latI(I2,:);
+    I3=find(latI>=ymin);
+    lonI=lonI(I3,:);
+    latI=latI(I3,:);
+    I4=find(latI<=ymax);
+    lonI=lonI(I4,:);
+    latI=latI(I4,:);
+   
+    I = I1(I2(I3(I4)));
+    
+    [h, ~, ~, binX, binY] = histcounts2(lonI,latI,size(grid));
+    grid = grid_initial;
+    % Prepare grid with histogram values and boundaries
+    for j = 1:size(grid, 1)
+        for i = 1:size(grid, 2)
+            if (grid(j, i) > -1)
+                grid(j, i) = h(i, j);
+            end
+        end
+    end
+    
+end

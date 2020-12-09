@@ -2,22 +2,17 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
-    omega_0 = -0.01;                % Repulsion to distant cells
+    omega_0 = -0.1;                % Repulsion to distant cells
     omega_1 = 0.1;                  % Repulsion to cells with nearby robots
 
     for robot = 1:n_robots
         target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, robots(setdiff(1:end, robot), :));
         if norm(target - robots(robot, :)) > 0
-            move = round((target - robots(robot, :)) ./ norm(target - robots(robot, :)));
-            % Move robot, taking care of out of border
-            if grid(robots(robot, 2) + move(2), robots(robot, 1) + move(1)) <= 0
-                disp(['Robot ', num2str(robot), ' was going to an out-of-border cell']);
-                % A*
-                GoalRegister=int8(zeros(size(mask)));
-                GoalRegister(target(2),target(1))=1;
-                path = ASTARPATH(robots(robot, 2), robots(robot, 1), mask, GoalRegister,1);
-                move = path(end - 1, :) - robots(robot, 1);
-            end
+            % A*
+            GoalRegister = int8(zeros(size(mask)));
+            GoalRegister(target(2), target(1)) = 1;
+            result = ASTARPATH(robots(robot, 1), robots(robot, 2), mask, GoalRegister, 1);
+            move = [result(end - 1, 2) - robots(robot, 1), result(end - 1, 1) - robots(robot, 2)];
 
             robots(robot, :) = robots(robot, :) + move;
             heading(robot) = atan2(move(2), move(1));
