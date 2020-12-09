@@ -1,6 +1,6 @@
-function [robots, heading] = reactive(grid, robots, heading)
+function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
-    n_robots = 3;                   % Number of robots
+    n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
     omega_0 = -0.01;                % Repulsion to distant cells
     omega_1 = 0.1;                  % Repulsion to cells with nearby robots
@@ -12,7 +12,11 @@ function [robots, heading] = reactive(grid, robots, heading)
             % Move robot, taking care of out of border
             if grid(robots(robot, 2) + move(2), robots(robot, 1) + move(1)) <= 0
                 disp(['Robot ', num2str(robot), ' was going to an out-of-border cell']);
-                continue; % Keep this robot stopped, go to next
+                % A*
+                GoalRegister=int8(zeros(size(mask)));
+                GoalRegister(target(2),target(1))=1;
+                path = ASTARPATH(robots(robot, 2), robots(robot, 1), mask, GoalRegister,1);
+                move = path(end - 1, :) - robots(robot, 1);
             end
 
             robots(robot, :) = robots(robot, :) + move;
@@ -27,7 +31,8 @@ end
 function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh)
     max_value = 0;
     target = pos;
-    max_heading = heading + pi;
+    %max_heading = heading + pi;
+    max_heading = 0;
     for i = 1:size(grid, 2)
         for j = 1:size(grid, 1)
             if grid(j, i) < 0 % out of border conditions
@@ -48,7 +53,7 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
                     end
 
                     value = max(grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh, 0);
-                    if (value > max_value) || (value == max_value && abs(new_heading - heading) < abs(max_heading - heading))
+                    if (value > max_value) || (value == max_value && abs(new_heading - heading) <= abs(max_heading - heading))
                         target = current;
                         max_value = value;
                         max_heading = new_heading;
