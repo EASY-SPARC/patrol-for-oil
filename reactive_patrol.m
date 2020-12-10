@@ -2,20 +2,27 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
-    omega_0 = -0.5;                 % Repulsion to distant cells
-    omega_1 = 0.1;                  % Repulsion to cells with nearby robots
+    omega_0 = -0.02;                 % Repulsion to distant cells
+    omega_1 = 0.07;                  % Repulsion to cells with nearby robots
+    aux_mask = mask;
 
     for robot = 1:n_robots
-        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, robots(setdiff(1:end, robot), :));
+        neighbors = robots(setdiff(1:end, robot), :);
+        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors);
         if norm(target - robots(robot, :)) > 0
             % A*
             GoalRegister = int8(zeros(size(mask)));
             GoalRegister(target(2), target(1)) = 1;
-            result = ASTARPATH(robots(robot, 1), robots(robot, 2), mask, GoalRegister, 1);
-            move = [result(end - 1, 2) - robots(robot, 1), result(end - 1, 1) - robots(robot, 2)];
+            for k = 1:size(neighbors, 1)
+               aux_mask(neighbors(k, 2), neighbors(k, 1)) = 1;
+            end
+            result = ASTARPATH(robots(robot, 1), robots(robot, 2), aux_mask, GoalRegister, 1);
+            if size(result, 1) > 1
+                move = [result(end - 1, 2) - robots(robot, 1), result(end - 1, 1) - robots(robot, 2)];
 
-            robots(robot, :) = robots(robot, :) + move;
-            heading(robot) = atan2(move(2), move(1));
+                robots(robot, :) = robots(robot, :) + move;
+                heading(robot) = atan2(move(2), move(1));
+            end
         else 
             disp(['Robot ', num2str(robot), ' stopped']);
         end
@@ -23,7 +30,7 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 end
 
 %%
-function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh)
+function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neighbors)
     max_value = 0;
     target = pos;
     %max_heading = heading + pi;
@@ -40,8 +47,8 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
                     new_heading = atan2(move(2), move(1));
 
                     distance_nearest_neigh = Inf;
-                    for k = 1:size(neigh, 1)
-                        distance_neigh = norm(current - neigh(k, :));
+                    for k = 1:size(neighbors, 1)
+                        distance_neigh = norm(current - neighbors(k, :));
                         if (distance_neigh < distance_nearest_neigh)
                             distance_nearest_neigh = distance_neigh;
                         end

@@ -4,7 +4,7 @@ clc
 % Time
 t = datetime(2020, 9, 15, 12, 0, 0);
 tf = datetime(2020, 9, 16, 12, 0, 0);
-t_step = minutes(15);
+t_step = minutes(10);
 
 % Getting region of interest
 region = kml2struct('search_region.kml');
@@ -23,13 +23,17 @@ for i = 1:width
 end
 x = linspace(region.BoundingBox(1,1), region.BoundingBox(2,1), width);
 y = linspace(region.BoundingBox(1,2), region.BoundingBox(2,2), height);
+[X, Y] = meshgrid(x, y);
+
+% Load shp file for Alagoas
+sl_alagoas = shaperead('.\shp\BRA_admin_AL.shp');
 
 grid_initial = grid;
 
-prev_simul = false;
-
 lon = 0;
 lat = 0;
+
+prev_simul = false;
 
 % 1 day loop
 if (prev_simul)
@@ -131,10 +135,15 @@ end
 n_robots = 3;
 heading = zeros(n_robots, 1);
 robots = [1, 15; 1, 16; 1, 17];
-cnt = 100;
+path_robots = zeros(n_robots, (tf - t)/minutes(1) + 1, 2);
+for robot = 1:n_robots
+    path_robots(robot, 1, 1) = robots(robot, 1);
+    path_robots(robot, 1, 2) = robots(robot, 2);
+end
+cnt = 2;
 
 while (t < tf)
-    for it = 1:cnt
+    for it = 1:10
         [robots, heading] = reactive_patrol(grid, robots, heading, mask);
                
         % Consume particles
@@ -145,22 +154,33 @@ while (t < tf)
             % the indexes on whole coastal range lat lon.
             lon(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = NaN;
             lat(I(binX==robots(robot, 1) & binY==robots(robot, 2))) = NaN;
+            
+            % Saving path
+            path_robots(robot, cnt, 1) = robots(robot, 1);
+            path_robots(robot, cnt, 2) = robots(robot, 2);
         end
         
         t = t + minutes(1);
         
-        c = ['green'; 'white'; 'black'];
-        imagesc(grid);
-        set(gca, 'YDir', 'normal');
-        hold on
-        for robot = 1:n_robots
-            scatter(robots(robot, 1), robots(robot, 2), [], c(robot, :), 'filled');
-        end
-        hold off
-        caxis([-1, 5])
-        colorbar
-        pause
+        %c = ['m'; 'w'; 'k'];
+        %pcolor(X, Y, grid);
+        %set(gca, 'YDir', 'normal');
+        %hold on
+        %mapshow(sl_alagoas,'FaceColor',[1 1 1],'HandleVisibility','off');
+        %ylabel('Latitude');xlabel('Longitude'); axis equal, axis([xmin xmax ymin ymax]);
+        %for robot = 1:n_robots
+        %    scatter(region.BoundingBox(1,1) + (robots(robot, 1)-0.5)/res_grid, ...
+        %        region.BoundingBox(1,2) + (robots(robot, 2)-0.5)/res_grid, ...
+        %        50, c(robot, :), 'filled'); % Need that 0.5 because pcolor is based on vertices
+        %    plot((path_robots(robot, 1:cnt, 1) - 0.5)/res_grid + region.BoundingBox(1,1), (path_robots(robot, 1:cnt, 2) - 0.5)/res_grid + region.BoundingBox(1,2), c(robot, :), 'LineWidth', 5);
+        %end
+        %hold off
+        %caxis([-1, 5])
+        %colormap jet
+        %colorbar
+        %pause
         
+        cnt = cnt + 1;
     end
     % Removing NaN particles
     lon = lon(~isnan(lon));
@@ -200,3 +220,21 @@ while (t < tf)
     end
     
 end
+
+c = ['m'; 'w'; 'k'];
+pcolor(X, Y, grid);
+set(gca, 'YDir', 'normal');
+hold on
+mapshow(sl_alagoas,'FaceColor',[1 1 1],'HandleVisibility','off');
+ylabel('Latitude');xlabel('Longitude'); axis equal, axis([xmin xmax ymin ymax]);
+for robot = 1:n_robots
+    scatter(region.BoundingBox(1,1) + (robots(robot, 1)-0.5)/res_grid, ...
+        region.BoundingBox(1,2) + (robots(robot, 2)-0.5)/res_grid, ...
+        50, c(robot, :), 'filled'); % Need that 0.5 because pcolor is based on vertices
+    plot((path_robots(robot, :, 1) - 0.5)/res_grid + region.BoundingBox(1,1), (path_robots(robot, :, 2) - 0.5)/res_grid + region.BoundingBox(1,2), c(robot, :), 'LineWidth', 5);
+end
+hold off
+caxis([-1, 5])
+title('omega_0 = -0.02; omega_1 = 0.07');
+colormap jet
+colorbar
