@@ -160,24 +160,26 @@ while (t < tf)
             path_robots(robot, cnt, 2) = robots(robot, 2);
         end
         
-        t = t + minutes(1);
+        t = t + minutes(0.5);
         
-        %c = ['m'; 'w'; 'k'];
-        %pcolor(X, Y, grid);
-        %set(gca, 'YDir', 'normal');
-        %hold on
-        %mapshow(sl_alagoas,'FaceColor',[1 1 1],'HandleVisibility','off');
-        %ylabel('Latitude');xlabel('Longitude'); axis equal, axis([xmin xmax ymin ymax]);
-        %for robot = 1:n_robots
-        %    scatter(region.BoundingBox(1,1) + (robots(robot, 1)-0.5)/res_grid, ...
-        %        region.BoundingBox(1,2) + (robots(robot, 2)-0.5)/res_grid, ...
-        %        50, c(robot, :), 'filled'); % Need that 0.5 because pcolor is based on vertices
-        %    plot((path_robots(robot, 1:cnt, 1) - 0.5)/res_grid + region.BoundingBox(1,1), (path_robots(robot, 1:cnt, 2) - 0.5)/res_grid + region.BoundingBox(1,2), c(robot, :), 'LineWidth', 5);
-        %end
-        %hold off
-        %caxis([-1, 5])
-        %colormap jet
-        %colorbar
+        figure(2)
+        c = ['m'; 'w'; 'k'];
+        pcolor(X, Y, grid);
+        set(gca, 'YDir', 'normal');
+        hold on
+        mapshow(sl_alagoas,'FaceColor',[1 1 1],'HandleVisibility','off');
+        ylabel('Latitude');xlabel('Longitude'); axis equal, axis([xmin xmax ymin ymax]);
+        for robot = 1:n_robots
+           scatter(region.BoundingBox(1,1) + (robots(robot, 1)-0.5)/res_grid, ...
+               region.BoundingBox(1,2) + (robots(robot, 2)-0.5)/res_grid, ...
+               50, c(robot, :), 'filled'); % Need that 0.5 because pcolor is based on vertices
+           plot((path_robots(robot, 1:cnt, 1) - 0.5)/res_grid + region.BoundingBox(1,1), (path_robots(robot, 1:cnt, 2) - 0.5)/res_grid + region.BoundingBox(1,2), c(robot, :), 'LineWidth', 5);
+        end
+        hold off
+        caxis([-1, 5])
+        colormap jet
+        colorbar
+        drawnow
         %pause
         
         cnt = cnt + 1;

@@ -13,7 +13,7 @@ function [lonI, latI] = gnome_sim(t, lon, lat)
     end
 
     % Call step.py using time ref
-    python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
+    python_cmd = 'C:\ProgramData\Anaconda3\envs\gnome\python.exe'; % Windows
     %python_cmd = '/home/glauberrleite/miniconda3/envs/gnome/bin/python'; % Linux
     python_file = 'step.py';
     [t_year, t_month, t_day, t_hour, t_minute, ~] = datevec(t);

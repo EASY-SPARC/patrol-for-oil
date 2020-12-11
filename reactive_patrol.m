@@ -2,13 +2,14 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
-    omega_0 = -0.02;                 % Repulsion to distant cells
-    omega_1 = 0.07;                  % Repulsion to cells with nearby robots
+    omega_0 = -0.5;                 % Repulsion to distant cells
+    omega_1 = 0.2;                  % Repulsion to cells with nearby robots
     aux_mask = mask;
 
     for robot = 1:n_robots
         neighbors = robots(setdiff(1:end, robot), :);
-        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors);
+        robot
+        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors,robot);
         if norm(target - robots(robot, :)) > 0
             % A*
             GoalRegister = int8(zeros(size(mask)));
@@ -30,7 +31,7 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 end
 
 %%
-function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neighbors)
+function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neighbors,robot)
     max_value = 0;
     target = pos;
     %max_heading = heading + pi;
@@ -53,8 +54,14 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
                             distance_nearest_neigh = distance_neigh;
                         end
                     end
+                    
+                    if grid(j, i)>0
+                        mapvalue(j,i) =max(-10*omega_0+grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh - 0.5*abs(new_heading - heading), 0);
+                    else
+                        mapvalue(j,i)=0;
+                    end
 
-                    value = max(grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh, 0);
+                    value = mapvalue(j,i);
                     if (value > max_value) || (value == max_value && abs(new_heading - heading) <= abs(max_heading - heading))
                         target = current;
                         max_value = value;
@@ -64,6 +71,9 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
             end
         end
     end
+    figure(1)
+    subplot(3,1,robot)
+    mesh(mapvalue)
     if (max_value == 0)
         target = pos;
     end

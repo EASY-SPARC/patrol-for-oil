@@ -65,8 +65,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     # global renderer
     #duration = timedelta(minutes=5)
     #timestep = timedelta(minutes=5)
-    duration = timedelta(minutes=10)
-    timestep = timedelta(minutes=10)
+    duration = timedelta(minutes=5)
+    timestep = timedelta(minutes=5)
     endtime = start_time + duration
 
     steps = duration.total_seconds()/timestep.total_seconds()
