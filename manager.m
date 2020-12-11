@@ -143,7 +143,7 @@ end
 cnt = 2;
 
 while (t < tf)
-    for it = 1:10
+    for it = 1:9
         [robots, heading] = reactive_patrol(grid, robots, heading, mask);
                
         % Consume particles
@@ -160,7 +160,7 @@ while (t < tf)
             path_robots(robot, cnt, 2) = robots(robot, 2);
         end
         
-        t = t + minutes(0.5);
+        t = t + seconds(40);
         
         figure(2)
         c = ['m'; 'w'; 'k'];
@@ -168,18 +168,27 @@ while (t < tf)
         set(gca, 'YDir', 'normal');
         hold on
         mapshow(sl_alagoas,'FaceColor',[1 1 1],'HandleVisibility','off');
-        ylabel('Latitude');xlabel('Longitude'); axis equal, axis([xmin xmax ymin ymax]);
-        for robot = 1:n_robots
-           scatter(region.BoundingBox(1,1) + (robots(robot, 1)-0.5)/res_grid, ...
-               region.BoundingBox(1,2) + (robots(robot, 2)-0.5)/res_grid, ...
-               50, c(robot, :), 'filled'); % Need that 0.5 because pcolor is based on vertices
-           plot((path_robots(robot, 1:cnt, 1) - 0.5)/res_grid + region.BoundingBox(1,1), (path_robots(robot, 1:cnt, 2) - 0.5)/res_grid + region.BoundingBox(1,2), c(robot, :), 'LineWidth', 5);
-        end
-        hold off
+        title(string(t));ylabel('Latitude');xlabel('Longitude'); axis equal, axis([xmin xmax ymin ymax]);
         caxis([-1, 5])
         colormap jet
         colorbar
+        for robot = 1:n_robots
+           scatter(region.BoundingBox(1,1) + (robots(robot, 1)-0.5)/res_grid, ...
+               region.BoundingBox(1,2) + (robots(robot, 2)-0.5)/res_grid, ...
+               50, c(robot, :), 'filled');
+        end
         drawnow
+        tstr=t;
+        tstr.Format='ddMMuuuu-HH-mm-ss';
+        saveas(gcf,'pos'+string(tstr)+'.png') 
+        for robot = 1:n_robots
+           pp=plot((path_robots(robot, 1:cnt, 1) - 0.5)/res_grid + region.BoundingBox(1,1), (path_robots(robot, 1:cnt, 2) - 0.5)/res_grid + region.BoundingBox(1,2), c(robot, :), 'LineWidth', 5);
+           pp.Color(4) = 0.4;
+        end
+        
+        hold off
+        drawnow 
+        saveas(gcf,'traj'+string(tstr)+'.png')
         %pause
         
         cnt = cnt + 1;
