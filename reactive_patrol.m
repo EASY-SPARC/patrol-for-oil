@@ -8,7 +8,6 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     for robot = 1:n_robots
         neighbors = robots(setdiff(1:end, robot), :);
-        robot
         target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors,robot);
         if norm(target - robots(robot, :)) > 0
             % A*

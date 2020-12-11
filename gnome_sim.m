@@ -1,5 +1,5 @@
-function [lonI, latI] = gnome_sim(t, lon, lat)
-    if nargin == 3
+function [lonI, latI] = gnome_sim(t, lon, lat, release)
+    if nargin >= 3
         % Write txt with particles
         output_filename = 'step.txt';
 
@@ -11,13 +11,18 @@ function [lonI, latI] = gnome_sim(t, lon, lat)
         fprintf(output_file, '%.10f\t%.10f\t1\n', [lon'; lat']);
         fclose(output_file);
     end
+    
+    if nargin < 4
+        release = 0;
+    end
 
     % Call step.py using time ref
     python_cmd = 'C:\ProgramData\Anaconda3\envs\gnome\python.exe'; % Windows
+    %python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
     %python_cmd = '/home/glauberrleite/miniconda3/envs/gnome/bin/python'; % Linux
     python_file = 'step.py';
     [t_year, t_month, t_day, t_hour, t_minute, ~] = datevec(t);
-    command = strjoin({python_cmd, python_file, num2str(t_year), num2str(t_month), num2str(t_day), num2str(t_hour), num2str(t_minute)}, ' ');
+    command = strjoin({python_cmd, python_file, num2str(t_year), num2str(t_month), num2str(t_day), num2str(t_hour), num2str(t_minute), num2str(release)}, ' ');
     system(command)
     
     filename='step.nc';

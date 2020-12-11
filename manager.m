@@ -34,6 +34,7 @@ lon = 0;
 lat = 0;
 
 prev_simul = false;
+release = 1;
 
 % 1 day loop
 if (prev_simul)
@@ -42,7 +43,7 @@ if (prev_simul)
         if (lon == 0)
            [lon, lat] = gnome_sim(t);
         else
-           [lon, lat] = gnome_sim(t, lon, lat);
+           [lon, lat] = gnome_sim(t, lon, lat, release);
         end
 
         % Define limits
@@ -142,8 +143,10 @@ for robot = 1:n_robots
 end
 cnt = 2;
 
+release_cnt = 0;
+
 while (t < tf)
-    for it = 1:9
+    for it = 1:3
         [robots, heading] = reactive_patrol(grid, robots, heading, mask);
                
         % Consume particles
@@ -193,11 +196,22 @@ while (t < tf)
         
         cnt = cnt + 1;
     end
+    
+    release_cnt = release_cnt + 1;
+    if (release_cnt == 5)
+        % Passed 10 minutes
+        release = 1;
+        release_cnt = 0;
+    else
+        % Do not release new particles
+        release = 0;
+    end
+    
     % Removing NaN particles
     lon = lon(~isnan(lon));
     lat = lat(~isnan(lat));
     
-    [lon, lat] = gnome_sim(t, lon, lat);
+    [lon, lat] = gnome_sim(t, lon, lat, release);
     % Define limits
     xmin = region.BoundingBox(1,1);
     xmax = region.BoundingBox(2,1);

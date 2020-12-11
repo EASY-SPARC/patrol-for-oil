@@ -118,9 +118,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     # add particles - it works
     print 'adding particles'
     # Persistent oil spill in contiguous zone border
-    release = release_from_splot_data(start_time,
-                                      'contiguous.txt')
-    model.spills += Spill(release=release, substance=subs)
+    if int(sys.argv[6]) == 1:
+        release = release_from_splot_data(start_time,
+                                          'contiguous.txt')
+        print "Adding new particles"
+        model.spills += Spill(release=release, substance=subs)
 
     # Particles from previows simulation step
     try:
