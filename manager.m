@@ -6,6 +6,9 @@ t = datetime(2020, 9, 15, 12, 0, 0);
 tf = datetime(2020, 9, 16, 12, 0, 0);
 t_step = minutes(10);
 
+% Load shp file for Alagoas
+sl_alagoas = shaperead('.\shp\BRA_admin_AL.shp');
+
 % Getting region of interest
 region = kml2struct('search_region.kml');
 res_grid = 111;
@@ -13,20 +16,21 @@ width = ceil(res_grid * (region.BoundingBox(2,1) - region.BoundingBox(1,1)));
 height = ceil(res_grid * (region.BoundingBox(2,2) - region.BoundingBox(1,2)));
 grid = zeros(height, width);
 mask = zeros(height, width);
+dist_grid = zeros(height, width);
 for i = 1:width
     for j = 1:height
         if inpolygon((i/res_grid) + region.BoundingBox(1,1), (j/res_grid) + region.BoundingBox(1,2), region.Lon, region.Lat) == 0
             grid(j, i) = -Inf;
             mask(j, i) = 1;
+            dist_grid(j, i) = Inf;
+        else
+            dist_grid(j, i) = res_grid * min(sqrt(((i/res_grid) + region.BoundingBox(1,1) - sl_alagoas(1).X).^2 + ((j/res_grid) + region.BoundingBox(1,2) - sl_alagoas(1).Y).^2));
         end
     end
 end
 x = linspace(region.BoundingBox(1,1), region.BoundingBox(2,1), width);
 y = linspace(region.BoundingBox(1,2), region.BoundingBox(2,2), height);
 [X, Y] = meshgrid(x, y);
-
-% Load shp file for Alagoas
-sl_alagoas = shaperead('.\shp\BRA_admin_AL.shp');
 
 grid_initial = grid;
 
@@ -147,7 +151,7 @@ release_cnt = 0;
 
 while (t < tf)
     for it = 1:3
-        [robots, heading] = reactive_patrol(grid, robots, heading, mask);
+        [robots, heading] = reactive_patrol(grid, robots, heading, mask, dist_grid);
                
         % Consume particles
         for robot = 1:n_robots

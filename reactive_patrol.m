@@ -1,4 +1,4 @@
-function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
+function [robots, heading] = reactive_patrol(grid, robots, heading, mask, dist_grid)
 
     n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
@@ -8,7 +8,7 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     for robot = 1:n_robots
         neighbors = robots(setdiff(1:end, robot), :);
-        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors,robot);
+        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors, dist_grid);
         if norm(target - robots(robot, :)) > 0
             % A*
             GoalRegister = int8(zeros(size(mask)));
@@ -30,7 +30,7 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 end
 
 %%
-function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neighbors,robot)
+function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neighbors, dist_grid)
     max_value = 0;
     target = pos;
     %max_heading = heading + pi;
@@ -55,7 +55,7 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
                     end
                     
                     if grid(j, i)>0
-                        mapvalue(j,i) =max(-10*omega_0+grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh - 0.2*abs(new_heading - heading), 0);
+                        mapvalue(j,i) =max(-10*omega_0+grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh - 0.2*abs(new_heading - heading) - dist_grid(j ,i), 0);
                     else
                         mapvalue(j,i)=0;
                     end
