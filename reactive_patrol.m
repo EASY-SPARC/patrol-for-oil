@@ -2,8 +2,8 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask)
 
     n_robots = size(robots, 1);     % Number of robots
     %robot_velocity = 90;           % Average robot velocity (km/h)
-    omega_0 = -0.8;                 % Repulsion to distant cells
-    omega_1 = 0.4;                  % Repulsion to cells with nearby robots
+    omega_0 = -0.5;                 % Repulsion to distant cells
+    omega_1 = 0.2;                  % Repulsion to cells with nearby robots
     aux_mask = mask;
 
     for robot = 1:n_robots
@@ -56,7 +56,7 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
                     end
                     
                     if grid(j, i)>0
-                        mapvalue(j,i) =max(-10*omega_0+grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh - 0.5*abs(new_heading - heading), 0);
+                        mapvalue(j,i) =max(-10*omega_0+grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh - 0.2*abs(new_heading - heading), 0);
                     else
                         mapvalue(j,i)=0;
                     end
