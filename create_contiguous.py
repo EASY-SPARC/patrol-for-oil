@@ -62,7 +62,8 @@ if __name__ == '__main__':
     cont_coord=[]
     for x in coordinates:
         x = x.split(',')
-        if len(x) > 1 and float(x[1]) > -11.5 and float(x[1]) < -8.5:
+        #if len(x) > 1 and float(x[1]) > -11.5 and float(x[1]) < -8.5:
+        if len(x) > 1 and float(x[1]) > -9.5 and float(x[1]) < -8.75:
             cont_coord.append([float(x[0]), float(x[1])])
 
         
