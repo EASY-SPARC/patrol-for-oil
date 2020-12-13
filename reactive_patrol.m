@@ -1,14 +1,11 @@
-function [robots, heading] = reactive_patrol(grid, robots, heading, mask, dist_grid)
+function [robots, heading] = reactive_patrol(grid, robots, heading, mask, dist_grid, weights)
 
     n_robots = size(robots, 1);     % Number of robots
-    %robot_velocity = 90;           % Average robot velocity (km/h)
-    omega_0 = -0.5;                 % Repulsion to distant cells
-    omega_1 = 0.2;                  % Repulsion to cells with nearby robots
     aux_mask = mask;
 
     for robot = 1:n_robots
         neighbors = robots(setdiff(1:end, robot), :);
-        target = computeTargetMulti(robots(robot, :), heading(robot), omega_0, omega_1, grid, neighbors, dist_grid);
+        target = computeTargetMulti(robots(robot, :), heading(robot), grid, neighbors, dist_grid,robot, weights(robot,:));
         if norm(target - robots(robot, :)) > 0
             % A*
             GoalRegister = int8(zeros(size(mask)));
@@ -30,11 +27,18 @@ function [robots, heading] = reactive_patrol(grid, robots, heading, mask, dist_g
 end
 
 %%
-function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neighbors, dist_grid)
+function target = computeTargetMulti(pos, heading, grid, neighbors, dist_grid,robot,weights)
     max_value = 0;
     target = pos;
     %max_heading = heading + pi;
     max_heading = 0;
+    
+    omega_c = weights(1);
+    omega_s = weights(2);
+    omega_d = weights(3);
+    omega_n = weights(4);
+    kappa = weights(5);
+    
     for i = 1:size(grid, 2)
         for j = 1:size(grid, 1)
             if grid(j, i) < 0 % out of border conditions
@@ -55,7 +59,7 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
                     end
                     
                     if grid(j, i)>0
-                        mapvalue(j,i) =max(-10*omega_0+grid(j, i) + omega_0 * distance + omega_1 * distance_nearest_neigh - 0.2*abs(new_heading - heading) - dist_grid(j ,i), 0);
+                        mapvalue(j,i) =max(kappa + omega_c*grid(j, i) + omega_s*dist_grid(j ,i) - omega_d * distance + omega_n * distance_nearest_neigh, 0);
                     else
                         mapvalue(j,i)=0;
                     end
@@ -70,9 +74,9 @@ function target = computeTargetMulti(pos, heading, omega_0, omega_1, grid, neigh
             end
         end
     end
-    %figure(1)
-    %subplot(3,1,robot)
-    %mesh(mapvalue)
+    figure(1)
+    subplot(7,1,robot)
+    mesh(mapvalue)
     if (max_value == 0)
         target = pos;
     end

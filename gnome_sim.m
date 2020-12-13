@@ -1,7 +1,4 @@
-function [lonI, latI] = gnome_sim(t, lon, lat, release)
-    if nargin < 4
-        release = 0;
-    end
+function [lonI, latI] = gnome_sim(t, release, lon, lat)
     if nargin >= 3
         % Write txt with particles
         output_filename = 'step.txt';
