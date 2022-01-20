@@ -10,19 +10,18 @@ function [lonI, latI] = gnome_sim(t, release, lon, lat)
         output_file = fopen(output_filename, 'w');
         fprintf(output_file, '%.10f\t%.10f\t1\n', [lon'; lat']);
         fclose(output_file);
+    end
     
     
 
 
     % Call step.py using time ref
-    python_cmd = 'C:\ProgramData\Anaconda3\envs\gnome\python.exe'; % Windows
     %python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
-    %python_cmd = '/home/glauberrleite/miniconda3/envs/gnome/bin/python'; % Linux
+    python_cmd = 'conda run -n gnome python.exe'; % Windows
     python_file = 'step.py';
     [t_year, t_month, t_day, t_hour, t_minute, ~] = datevec(t);
     command = strjoin({python_cmd, python_file, num2str(t_year), num2str(t_month), num2str(t_day), num2str(t_hour), num2str(t_minute), num2str(release)}, ' ');
     system(command)
-    end
     filename='step.nc';
 
     %disp(['Loading ', filename])

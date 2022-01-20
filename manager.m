@@ -11,7 +11,7 @@ sl_alagoas = shaperead('.\shp\BRA_admin_AL.shp');
 
 % Getting region of interest
 region = kml2struct('search_region.kml');
-res_grid = 111;
+res_grid = 111/0.5;
 width = ceil(res_grid * (region.BoundingBox(2,1) - region.BoundingBox(1,1)));
 height = ceil(res_grid * (region.BoundingBox(2,2) - region.BoundingBox(1,2)));
 grid = zeros(height, width);
@@ -39,15 +39,15 @@ grid_initial = grid;
 lon = 0;
 lat = 0;
 
-prev_simul = false;
+prev_simul = true;
 release = 1;
-
+%%
 % 1 day loop
 if (prev_simul)
     while t < tf
         t
         if (lon == 0)
-            [lon, lat] = gnome_sim(t,release);
+            [lon, lat] = gnome_sim(t, release);
         else
             [lon, lat] = gnome_sim(t, release, lon, lat);
         end
@@ -104,7 +104,7 @@ if (prev_simul)
         %lat = latI;
     end
 end
-
+%%
 t = tf;
 tf = datetime(2020, 9, 16, 15, 0, 0);
 

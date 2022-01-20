@@ -38,12 +38,6 @@ from gnome.utilities.distributions import WeibullDistribution, UniformDistributi
 
 from gnome import utilities
 
-#from gnome.spill import (Release,
-#                         PointLineRelease,
-#                         GridRelease,
-#                         InitElemsFromFile,
-#                         Spill)
-
 from gnome.movers import RandomMover, WindMover, CatsMover, GridCurrentMover,  GridWindMover
 
 from gnome.outputters import Renderer, NetCDFOutput, KMZOutput, ShapeOutput
@@ -53,7 +47,7 @@ base_dir = os.path.dirname(__file__)
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
 
-    print 'get contiguous'
+    print('get contiguous')
 
     kml_file = os.path.join(base_dir, 'contigua.kml')
     with open(kml_file) as f:
@@ -66,7 +60,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
         if len(x) > 1 and float(x[1]) > -11.5 and float(x[1]) < -8.5:
             cont_coord.append([float(x[0]), float(x[1])])
 
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2020, 9, 15, 12, 0)
     mapfile = get_datafile(os.path.join(base_dir, './alagoas-coast.BNA'))
@@ -75,12 +69,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     duration = timedelta(days=1)
     timestep = timedelta(minutes=15)
-    endtime = start_time + duration
+    end_time = start_time + duration
 
 
     steps = duration.total_seconds()/timestep.total_seconds()
 
-    print "Total step: %.4i " % (steps)
+    print("Total step: %.4i " % (steps))
 
     # one hour timestep
     model = Model(start_time=start_time,
@@ -94,15 +88,20 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     subs = GnomeOil(oil_name,initializers=plume_initializers(distribution=wd))
 
-    for idx in range(0, len(cont_coord),2):
-        model.spills += point_line_release_spill(num_elements=steps, start_position=(cont_coord[idx][0],cont_coord[idx][1], 0.0),
-                                         release_time=start_time,
-                                         end_release_time=start_time + duration,
-                                         amount=steps,
-                                         substance = subs,
-                                         units='kg')
+    model.spills += point_line_release_spill(release_time=start_time, start_position=(-35.153, -8.999, 0.0), num_elements=1000, end_release_time=end_time, substance= subs, units='kg')
+    model.spills += point_line_release_spill(release_time=start_time, start_position=(-35.176, -9.135, 0.0), num_elements=1000, end_release_time=end_time, substance= subs, units='kg')
+    model.spills += point_line_release_spill(release_time=start_time, start_position=(-35.062, -9.112, 0.0), num_elements=1000, end_release_time=end_time, substance= subs, units='kg')
+    model.spills += point_line_release_spill(release_time=start_time, start_position=(-34.994, -9.248, 0.0), num_elements=1000, end_release_time=end_time, substance= subs, units='kg')
+
+    #for idx in range(0, len(cont_coord),2):
+    #    model.spills += point_line_release_spill(num_elements=steps, start_position=(cont_coord[idx][0],cont_coord[idx][1], 0.0),
+    #                                     release_time=start_time,
+    #                                     end_release_time=start_time + duration,
+    #                                     amount=steps,
+    #                                     substance = subs,
+    #                                    units='kg')
     
-    print 'adding outputters'
+    print('adding outputters')
 
     renderer = Renderer(mapfile, images_dir, image_size=(900, 600),
                         output_timestep=timedelta(minutes=10),
@@ -123,18 +122,18 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #                                surface_conc="kde",
     #                                )
 
-    print 'adding movers:'
+    print('adding movers:')
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=10000)
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'corrente15a28de09.nc'))
     model.movers += GridCurrentMover(curr_file, num_method='Euler')
 
-    print 'adding a grid wind mover:'
+    print('adding a grid wind mover:')
     wind_file = get_datafile(os.path.join(base_dir, 'vento15a28de09.nc'))
     #topology_file = get_datafile(os.path.join(base_dir, 'WindSpeedDirSubsetTop.dat'))
     #w_mover = GridWindMover(wind_file, topology_file)
@@ -145,15 +144,26 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += w_mover
 
+    print('adding outputters')
+
+    renderer = Renderer(mapfile, images_dir, image_size=(900, 600),
+                        output_timestep=timestep,
+                        draw_ontop='forecast')
+    #set the viewport to zoom in on the map:
+    #renderer.viewport = ((-37, -11), (-34, -8)) #alagoas
+    renderer.viewport = ((-35.5, -9.5), (-34, -8.5)) #1/4 N alagoas
+    model.outputters += renderer
+    
+    netcdf_file = os.path.join(base_dir, 'maragogi.nc')
+    scripting.remove_netcdf(netcdf_file)
+    model.outputters += NetCDFOutput(netcdf_file, which_data='standard', surface_conc='kde')
 
     return model
 
 if __name__ == '__main__':
     scripting.make_images_dir()
 
-    model = make_model()
-
-    
+    model = make_model() 
     
     #for step in model:
     #    print model.spills.num_released
@@ -162,8 +172,7 @@ if __name__ == '__main__':
 
     for step in model:
         #print step
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'], utilities.get_mem_use()))
 
     #model.full_run()
     

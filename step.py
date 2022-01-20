@@ -54,10 +54,10 @@ from gnome import utilities
 base_dir = os.path.dirname(__file__)
 
 def make_model(images_dir=os.path.join(base_dir, 'images2')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]))
-    mapfile = get_datafile(os.path.join(base_dir, './alagoas-coast.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, './brazil-coast.bna'))
 
     gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
@@ -71,7 +71,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
 
     steps = duration.total_seconds()/timestep.total_seconds()
 
-    print "Total step: %.4i " % (steps)
+    print("Total step: %.4i " % (steps))
 
     model = Model(start_time=start_time,
                   duration=duration, time_step=timestep,
@@ -116,12 +116,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     #print(relnc.num_released)
 
     # add particles - it works
-    print 'adding particles'
+    print('adding particles')
     # Persistent oil spill in contiguous zone border
     if int(sys.argv[6]) == 1:
         release = release_from_splot_data(start_time,
                                           'contiguous.txt')
-        print "Adding new particles"
+        print("Adding new particles")
         model.spills += Spill(release=release, substance=subs)
 
     # Particles from previows simulation step
@@ -145,17 +145,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
     #spnc = Spill(release=None)
     #spnc.release = relnc
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     #model.movers += RandomMover(diffusion_coef=10000, uncertain_factor=2)
     model.movers += RandomMover(diffusion_coef=10000)
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'corrente15a28de09.nc'))
     model.movers += GridCurrentMover(curr_file, num_method='Euler')
 
-    print 'adding a grid wind mover:'
+    print('adding a grid wind mover:')
     wind_file = get_datafile(os.path.join(base_dir, 'vento15a28de09.nc'))
     #topology_file = get_datafile(os.path.join(base_dir, 'WindSpeedDirSubsetTop.dat'))
     #w_mover = GridWindMover(wind_file, topology_file)
@@ -166,14 +166,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images2')):
 
     model.movers += w_mover
 
-    print 'adding outputters'
+    print('adding outputters')
 
     renderer = Renderer(mapfile, images_dir, image_size=(900, 600),
                         output_timestep=timestep,
                         draw_ontop='forecast')
     #set the viewport to zoom in on the map:
     #renderer.viewport = ((-37, -11), (-34, -8)) #alagoas
-    renderer.viewport = ((-35.5, -9.5), (-34, -8.5)) #1/4 N alagoas
+    renderer.viewport = ((-55, -34), (-30, 5)) #1/4 N alagoas
     model.outputters += renderer
     
     netcdf_file = os.path.join(base_dir, 'step.nc')
@@ -189,8 +189,8 @@ if __name__ == '__main__':
 
     for step in model:
         #print step
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
 
     # # the image output renderer
     # global renderer
