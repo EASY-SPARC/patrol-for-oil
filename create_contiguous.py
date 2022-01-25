@@ -52,7 +52,7 @@ from gnome.outputters import Renderer, NetCDFOutput, KMZOutput, ShapeOutput
 base_dir = os.path.dirname(__file__)
 
 if __name__ == '__main__':
-    print 'get contiguous'
+    print('get contiguous')
 
     kml_file = os.path.join(base_dir, 'contigua.kml')
     with open(kml_file) as f:
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     for x in coordinates:
         x = x.split(',')
         #if len(x) > 1 and float(x[1]) > -11.5 and float(x[1]) < -8.5:
-        if len(x) > 1 and float(x[1]) > -9.5 and float(x[1]) < -8.75:
+        if len(x) > 1 and float(x[1]) > -9.5 and float(x[1]) < -3:
             cont_coord.append([float(x[0]), float(x[1])])
 
         

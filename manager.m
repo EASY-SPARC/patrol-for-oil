@@ -3,7 +3,7 @@ clc
 
 % Time
 t = datetime(2020, 9, 15, 12, 0, 0);
-tf = datetime(2020, 9, 16, 12, 0, 0);
+tf = datetime(2020, 9, 20, 12, 0, 0);
 t_step = minutes(10);
 
 % Load shp file for Alagoas

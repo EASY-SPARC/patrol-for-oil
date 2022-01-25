@@ -12,9 +12,6 @@ function [lonI, latI] = gnome_sim(t, release, lon, lat)
         fclose(output_file);
     end
     
-    
-
-
     % Call step.py using time ref
     %python_cmd = 'C:\Users\glaub\.conda\envs\gnome\python.exe'; % Windows
     python_cmd = 'conda run -n gnome python.exe'; % Windows
